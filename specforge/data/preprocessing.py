@@ -375,7 +375,8 @@ def build_eagle3_dataset(
                 is_preformatted=False,
                 **examples,
             )
-
+        if "request_id" in examples:
+            processed["request_id"] = examples["request_id"]
         return processed
 
     # Process dataset only once

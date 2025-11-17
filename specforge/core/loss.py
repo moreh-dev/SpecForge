@@ -26,6 +26,7 @@ def _calculate_settings(n):
 
     MAX_FUSED_SIZE = 65536
     BLOCK_SIZE = triton.next_power_of_2(n)
+    return 1024, 4
     if BLOCK_SIZE > MAX_FUSED_SIZE:
         raise RuntimeError(
             f"Cannot launch Triton kernel since n = {n} exceeds the recommended Triton blocksize = {MAX_FUSED_SIZE}."

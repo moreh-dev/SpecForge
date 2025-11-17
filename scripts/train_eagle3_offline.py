@@ -69,6 +69,7 @@ def parse_args():
     parser.add_argument("--train-hidden-states-path", type=str, required=True)
     parser.add_argument("--eval-data-path", type=str, default=None)
     parser.add_argument("--eval-hidden-states-path", type=str, default=None)
+    parser.add_argument("--baseline-dir", type=str, default=None)
     parser.add_argument("--num-epochs", type=int, default=10)
     parser.add_argument("--draft-global-batch-size", type=int, default=16)
     parser.add_argument("--draft-micro-batch-size", type=int, default=1)
@@ -215,6 +216,17 @@ def main():
 
     # detecting last ckpt for draft model
     draft_model_last_checkpoint = None
+    if args.baseline_dir is not None:
+        if os.path.isdir(args.baseline_dir):
+            draft_model_last_checkpoint = args.baseline_dir
+            print_on_rank0(
+                f"Finetuning from baseline model: {draft_model_last_checkpoint}"
+            )
+            args.draft_model_config = os.path.join(args.baseline_dir, "config.json")
+        else:
+            raise ValueError(
+                f"Provided baseline-dir {args.baseline_dir} is not a valid directory."
+            )
     if args.resume and os.path.isdir(args.output_dir):
         print_on_rank0(args.output_dir)
         draft_model_last_checkpoint = get_last_checkpoint(args.output_dir)

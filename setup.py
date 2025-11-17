@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 
 def read_requirements():
-    with open(f"requirements.txt", "r") as f:
+    with open(f"requirements-rocm.txt", "r") as f:
         lines = (line.strip() for line in f)
         return [line for line in lines if line and not line.startswith(("#", "--"))]
 
