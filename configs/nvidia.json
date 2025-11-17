@@ -10,7 +10,7 @@
     "eagle_aux_hidden_state_layer_ids": [
       1,
       17,
-      33
+      32
     ],
     "use_aux_hidden_state": true,
     "use_input_layernorm_in_first_layer": true,
