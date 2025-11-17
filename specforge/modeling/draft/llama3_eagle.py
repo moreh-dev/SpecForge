@@ -991,7 +991,10 @@ class LlamaForCausalLMEagle3(Eagle3DraftModel):
         self.quant_config = quant_config
 
         self.vocab_size = config.vocab_size
+        if getattr(config, "draft_vocab_size", None) is None:
+            config.draft_vocab_size = config.vocab_size
         self.draft_vocab_size = config.draft_vocab_size
+
         self.embed_tokens = nn.Embedding(
             config.vocab_size, config.hidden_size, config.pad_token_id
         )
