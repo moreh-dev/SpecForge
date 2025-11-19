@@ -65,7 +65,7 @@ def parse_args():
     )
 
     # add training-related arguments
-    parser.add_argument("--train-data-path", type=str, required=True)
+    # parser.add_argument("--train-data-path", type=str, required=True)
     parser.add_argument("--train-hidden-states-path", type=str, required=True)
     parser.add_argument("--eval-data-path", type=str, default=None)
     parser.add_argument("--eval-hidden-states-path", type=str, default=None)
@@ -280,25 +280,19 @@ def main():
 
     # convert to dataloader
     cache_params_string = (
-        f"{args.train_data_path}-"
+        f"{args.train_hidden_states_path}-"
         f"{args.max_length}-"
         f"{args.chat_template}-"
         f"{args.target_model_path}"  # Tokenizer may also different
     )
     cache_key = hashlib.md5(cache_params_string.encode()).hexdigest()
-    train_dataset = load_dataset("json", data_files=args.train_data_path)["train"]
     with rank_0_priority():
+        train_eagle3_dataset = build_offline_eagle3_dataset(
+            args.train_hidden_states_path,
+            args.max_length,
+        )
         if draft_model_config.draft_vocab_size != draft_model_config.vocab_size:
-            train_eagle3_dataset_tmp = build_eagle3_dataset(
-                dataset=train_dataset,
-                tokenizer=tokenizer,
-                chat_template=args.chat_template,
-                is_preformatted=args.is_preformatted,
-                max_length=args.max_length,
-                cache_dir=os.path.join(args.cache_dir, "processed_dataset"),
-                cache_key=cache_key,
-                num_proc=args.build_dataset_num_proc,
-            )
+            train_eagle3_dataset_tmp = train_eagle3_dataset
             vocab_mapping_path = generate_vocab_mapping_file(
                 dataset=train_eagle3_dataset_tmp,
                 target_vocab_size=draft_model_config.vocab_size,
@@ -306,10 +300,6 @@ def main():
                 cache_dir=os.path.join(args.cache_dir, "vocab_mapping"),
                 cache_key=cache_key,
             )
-        train_eagle3_dataset = build_offline_eagle3_dataset(
-            args.train_hidden_states_path,
-            args.max_length,
-        )
 
     train_dataloader = prepare_dp_dataloaders(
         train_eagle3_dataset,
@@ -380,7 +370,7 @@ def main():
     print_with_rank("Initialized optimizer and scheduler")
 
     start_epoch = 0
-    if draft_model_last_checkpoint is not None:
+    if draft_model_last_checkpoint is not None and args.resume:
         print_on_rank0(
             f"Resuming draft model training from checkpoint: {draft_model_last_checkpoint}"
         )
