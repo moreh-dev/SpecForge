@@ -273,6 +273,8 @@ def main():
         )
     draft_model.load_embedding(args.target_model_path, embedding_key=args.embedding_key)
     draft_model.freeze_embedding()
+    with torch.no_grad():
+        draft_model.lm_head.weight.copy_(target_head.fc.weight)
     print_with_rank("Initialized draft model")
 
     # build dataloaders
@@ -350,6 +352,7 @@ def main():
         length=args.ttt_length,
         attention_backend=args.draft_attention_backend,
     )
+    
     mp_policy = MixedPrecisionPolicy(
         param_dtype=torch.bfloat16, reduce_dtype=torch.float32
     )

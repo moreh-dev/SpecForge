@@ -10,7 +10,15 @@ import torch.distributed as dist
 from torch.distributed._tensor import DTensor, Shard, distribute_tensor
 from transformers import AutoConfig, PretrainedConfig
 
+
 logger = logging.getLogger(__name__)
+if not logger.hasHandlers():
+    import sys
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 
 @contextmanager
