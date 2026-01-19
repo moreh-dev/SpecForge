@@ -477,13 +477,21 @@ class OfflineEagle3Dataset(torch.utils.data.Dataset):
 
 
 def build_offline_eagle3_dataset(
-    hidden_states_path: str,
+    hidden_states_path: str = None,
+    hidden_states_list: List[str] = None,
     max_len: int = 2048,
 ) -> torch.utils.data.Dataset:
-    return OfflineEagle3Dataset(
-        list_local_files(hidden_states_path),
-        max_len=max_len,
-    )
+    if hidden_states_path is not None:
+        return OfflineEagle3Dataset(
+            list_local_files(hidden_states_path),
+            max_len=max_len,
+        )
+    else:
+        assert hidden_states_list is not None, "hidden_states_list must be provided"
+        return OfflineEagle3Dataset(
+            hidden_states_list,
+            max_len=max_len,
+        )
 
 
 # ==============================

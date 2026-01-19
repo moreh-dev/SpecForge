@@ -1,7 +1,7 @@
 import torch
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
-from specforge.lr_scheduler import CosineAnnealingWarmupLR
+from specforge.lr_scheduler import CosineAnnealingWarmupLR, ConstantLRScheduler
 from specforge.utils import print_on_rank0
 
 
@@ -14,6 +14,7 @@ class BF16Optimizer:
         max_grad_norm=0.5,
         total_steps=800_000,
         warmup_ratio=0.015,
+        streaming = False,
     ):
         # TODO: For now, we only support cosine annealing warmup lr scheduler and AdamW optimizer
         # TODO: We should make these parameters configurable
@@ -30,11 +31,15 @@ class BF16Optimizer:
         self.optimizer = torch.optim.AdamW(
             self.fp32_params, lr=lr, weight_decay=weight_decay
         )
-        self.scheduler = CosineAnnealingWarmupLR(
-            self.optimizer,
-            total_steps=total_steps,
-            warmup_steps=int(warmup_ratio * total_steps),
-        )
+        if not streaming:
+            self.scheduler = CosineAnnealingWarmupLR(
+                self.optimizer,
+                total_steps=total_steps,
+                warmup_steps=int(warmup_ratio * total_steps),
+            )
+        else:
+            self.scheduler = ConstantLRScheduler(self.optimizer, lr=lr)
+        
 
     def step(self):
         with torch.no_grad():

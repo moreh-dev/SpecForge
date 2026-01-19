@@ -258,3 +258,15 @@ class CosineAnnealingWarmupLR(WarmupScheduler):
             last_epoch=last_epoch,
         )
         super().__init__(optimizer, warmup_steps, base_scheduler, last_epoch=last_epoch)
+
+class ConstantLRScheduler:
+    def __init__(self, optimizer, lr):
+        self.optimizer = optimizer
+        self.lr = lr
+    def step(self):
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = self.lr
+    def state_dict(self):
+        return {}
+    def load_state_dict(self, state_dict):
+        pass
