@@ -63,6 +63,11 @@ def parse_args():
         default="lm_head.weight",
         help="The key of the lm head weight to load from the target model",
     )
+    parser.add_argument(
+        "--copy-lm-head-from-target",
+        action="store_true",
+        help="Whether to copy the lm_head weights from the target model to the draft model",
+    )
 
     # add training-related arguments
     # parser.add_argument("--train-data-path", type=str, required=True)
@@ -273,8 +278,10 @@ def main():
         )
     draft_model.load_embedding(args.target_model_path, embedding_key=args.embedding_key)
     draft_model.freeze_embedding()
-    with torch.no_grad():
-        draft_model.lm_head.weight.copy_(target_head.fc.weight)
+    if args.copy_lm_head_from_target:
+        with torch.no_grad():
+            draft_model.lm_head.weight.copy_(target_head.fc.weight)
+        print_with_rank("Copied lm_head weights from target model")
     print_with_rank("Initialized draft model")
 
     # build dataloaders
