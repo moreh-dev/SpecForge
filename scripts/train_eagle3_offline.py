@@ -34,7 +34,7 @@ from specforge.utils import (
     get_full_optimizer_state,
     get_last_checkpoint,
     print_on_rank0,
-    print_with_rank,
+    print_on_rank0,
     rank_0_priority,
     shard_optimizer_state_with_dtensor,
 )
@@ -186,7 +186,6 @@ def parse_args():
     parser.add_argument("--profile-start-step", type=int, default=30)
     parser.add_argument("--profile-num-steps", type=int, default=4)
     parser.add_argument("--profile-record-shapes", action="store_true")
-
     args = parser.parse_args()
 
     return parser, args
@@ -197,7 +196,7 @@ def main():
     parser, args = parse_args()
     set_seed(args.seed)
     init_distributed(timeout=args.dist_timeout, tp_size=args.tp_size)
-    print_with_rank("Initialized distributed environment")
+    print_on_rank0("Initialized distributed environment")
     args.dp_size = dist.get_world_size() // args.tp_size
     args.draft_accumulation_steps = (
         args.draft_global_batch_size // args.dp_size // args.draft_micro_batch_size
@@ -206,7 +205,7 @@ def main():
         args.draft_accumulation_steps * args.draft_micro_batch_size * args.dp_size
         == args.draft_global_batch_size
     ), f"draft_global_batch_size={args.draft_global_batch_size} must be divisible by dp_size={args.dp_size} and micro_batch_size={args.draft_micro_batch_size}"
-    print_with_rank(
+    print_on_rank0(
         f"draft_accumulation_steps={args.draft_global_batch_size} // {args.dp_size} // {args.draft_micro_batch_size}={args.draft_accumulation_steps}"
     )
 
@@ -246,7 +245,7 @@ def main():
     )
     target_head.freeze_weights()
     target_head = target_head.eval().cuda().to(torch.bfloat16)
-    print_with_rank("Initialized target head")
+    print_on_rank0("Initialized target head")
 
     # Handle draft model config
     if args.draft_model_config is None:
@@ -281,8 +280,8 @@ def main():
     if args.copy_lm_head_from_target:
         with torch.no_grad():
             draft_model.lm_head.weight.copy_(target_head.fc.weight)
-        print_with_rank("Copied lm_head weights from target model")
-    print_with_rank("Initialized draft model")
+        print_on_rank0("Copying LM head weights from target model to draft model")
+    print_on_rank0("Initialized draft model")
 
     # build dataloaders
     tokenizer = AutoTokenizer.from_pretrained(args.target_model_path)
@@ -318,7 +317,7 @@ def main():
         process_group=get_dp_group(),
         pin_memory=True,
     )
-    print_with_rank("Initialized train dataloader")
+    print_on_rank0("Initialized train dataloader")
 
     # Calculate total steps if not provided
     if args.total_steps is None:
@@ -326,16 +325,16 @@ def main():
             len(train_dataloader) / args.draft_accumulation_steps
         )
         args.total_steps = args.num_epochs * steps_per_epoch
-        print_with_rank(
+        print_on_rank0(
             f"Auto-calculated total_steps: {args.total_steps} (num_epochs={args.num_epochs} * steps_per_epoch={steps_per_epoch})"
         )
     else:
-        print_with_rank(f"Using provided total_steps: {args.total_steps}")
+        print_on_rank0(f"Using provided total_steps: {args.total_steps}")
 
     # we load the vocab mapping then
     if draft_model_config.draft_vocab_size != draft_model_config.vocab_size:
         draft_model.load_vocab_mapping(vocab_mapping_path)
-        print_with_rank("Loaded vocab mapping")
+        print_on_rank0("Loaded vocab mapping")
 
     if args.eval_data_path is not None:
         eval_eagle3_dataset = build_offline_eagle3_dataset(
@@ -350,7 +349,7 @@ def main():
             process_group=get_dp_group(),
             pin_memory=True,
         )
-        print_with_rank("Initialized eval dataloader")
+        print_on_rank0("Initialized eval dataloader")
 
     # build Eagle3 model
     eagle3_model = OfflineEagle3Model(
@@ -366,7 +365,7 @@ def main():
     fsdp_config = {"mesh": get_dp_device_mesh(), "mp_policy": mp_policy}
     fully_shard(eagle3_model, **fsdp_config)
 
-    print_with_rank(f"Initialized Eagle3 FSDP model")
+    print_on_rank0(f"Initialized Eagle3 FSDP model")
     global_step, batch_index = 0, 0
     log_dict = defaultdict(float)
     # build other components
@@ -377,7 +376,7 @@ def main():
         warmup_ratio=args.warmup_ratio,
         total_steps=args.total_steps,
     )
-    print_with_rank("Initialized optimizer and scheduler")
+    print_on_rank0("Initialized optimizer and scheduler")
 
     start_epoch = 0
     if draft_model_last_checkpoint is not None and args.resume:

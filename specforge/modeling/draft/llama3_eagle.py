@@ -15,7 +15,7 @@ from specforge.modeling.draft.flex_attention import (
     compile_friendly_flex_attention,
     generate_eagle3_mask,
 )
-from specforge.utils import print_with_rank
+from specforge.utils import print_on_rank0
 
 from .base import Eagle3DraftModel
 
@@ -204,7 +204,7 @@ class LlamaRotaryEmbedding(torch.nn.Module):
                 orig_max_position,
             ]
         ):
-            print_with_rank(
+            print_on_rank0(
                 f"Using Llama3 style rotary embedding with scaling_factor={scaling_factor}, low_freq_factor={low_freq_factor}, high_freq_factor={high_freq_factor}, orig_max_position={orig_max_position}"
             )
             self.scaling_factor = scaling_factor
@@ -911,7 +911,7 @@ class LlamaDecoderLayer(nn.Module):
         if attention_backend == "sdpa":
             self.self_attn = LlamaAttention(config=config)
         elif attention_backend == "flex_attention":
-            print_with_rank("Using flex attention on draft model training!")
+            print_on_rank0("Using flex attention on draft model training!")
             self.self_attn = LlamaFlexAttention(config=config)
         else:
             raise ValueError(f"Unknown attention backend {attention_backend}")
@@ -1036,10 +1036,10 @@ class LlamaForCausalLMEagle3(Eagle3DraftModel):
             position_ids (`torch.LongTensor`, *optional*): position ids of shape `(batch, seq_len)`
         """
         if ttt_length == 1:
-            print_with_rank("using ttt_length 1, no need to cache hidden states")
+            print_on_rank0("using ttt_length 1, no need to cache hidden states")
             cache_hidden = None
         else:
-            print_with_rank(f"using ttt_length {ttt_length}, caching hidden states")
+            print_on_rank0(f"using ttt_length {ttt_length}, caching hidden states")
             cache_hidden = [[], []]
 
         batch_size, seq_length, _ = hidden_states.size()

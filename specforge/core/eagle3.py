@@ -593,14 +593,16 @@ def _compute_target_p_padded(target, t2d, loss_mask, length):
 @torch.compile(dynamic=None)
 def _compute_target_p(target, t2d, loss_mask):
     target_head = target
+    # keep computations in float32 for stability but store the result back in the
+    # original dtype to cut activation memory in half
+    orig_dtype = target_head.dtype
     target_max_token = target_head.argmax(-1)
     target_mask = t2d[target_max_token]
     target_mask = target_mask[..., None].int()
     position_mask = target_mask * loss_mask
     target_head = target_head[..., t2d]
-    target_head = target_head.float()
-    target_p = nn.Softmax(dim=2)(target_head)
-    target_p = target_p.detach()
+    target_p = nn.Softmax(dim=2)(target_head.float())
+    target_p = target_p.to(orig_dtype).detach()
     return target_p, position_mask
 
 

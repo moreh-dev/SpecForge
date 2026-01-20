@@ -1,6 +1,7 @@
 #!/bin/bash
 export TORCHINDUCTOR_AUTOTUNE_ATEN=0
 export TORCHINDUCTOR_AUTOTUNE_TRITON=0
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 torchrun \
     --standalone \
@@ -11,9 +12,10 @@ torchrun \
     --train-hidden-states-path /cache/vllm_tide_dump_0119/pending \
     --output-dir ./outputs_vllm_tide_dump_0119_outputs \
     --draft-global-batch-size 16 \
-    --draft-micro-batch-size 1 \
+    --draft-micro-batch-size 2 \
     --num-epochs 3 \
     --learning-rate 1e-4 \
     --max-length 4096 \
     --chat-template gpt-oss \
-    --baseline-dir /models/gpt-oss-120b-Eagle3
+    --baseline-dir /models/gpt-oss-120b-Eagle3 \
+    --copy-lm-head-from-target 
