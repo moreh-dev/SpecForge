@@ -68,6 +68,11 @@ def parse_args():
         action="store_true",
         help="Whether to copy the lm_head weights from the target model to the draft model",
     )
+    parser.add_argument(
+        "--preserve-draft-vocab-size",
+        action="store_true",
+        help="Whether to preserve the original draft_vocab_size in config when saving (keep as None if it was None)",
+    )
 
     # add training-related arguments
     # parser.add_argument("--train-data-path", type=str, required=True)
@@ -257,6 +262,9 @@ def main():
     else:
         # Use provided config file
         draft_model_config = AutoDraftModelConfig.from_file(args.draft_model_config)
+
+    # Save original draft_vocab_size to restore later if preserve flag is set
+    original_draft_vocab_size = getattr(draft_model_config, "draft_vocab_size", None)
 
     if draft_model_last_checkpoint:
         draft_model = (
@@ -593,10 +601,24 @@ def main():
                 print_on_rank0(
                     f"Saved full training state to {epoch_output_dir}/training_state.pt"
                 )
+
+                # Restore original draft_vocab_size if preserve flag is set
+                if args.preserve_draft_vocab_size:
+                    current_draft_vocab_size = draft_model.config.draft_vocab_size
+                    draft_model.config.draft_vocab_size = original_draft_vocab_size
+                    print_on_rank0(
+                        f"Restoring draft_vocab_size in config: {current_draft_vocab_size} -> {original_draft_vocab_size}"
+                    )
+
                 draft_model.save_pretrained(
                     epoch_output_dir,
                     state_dict=draft_model_state_dict,
                 )
+
+                # Restore back to the current value for continued training
+                if args.preserve_draft_vocab_size:
+                    draft_model.config.draft_vocab_size = current_draft_vocab_size
+
                 print_on_rank0(f"Saved model configuration to {epoch_output_dir}")
             dist.barrier()
 
