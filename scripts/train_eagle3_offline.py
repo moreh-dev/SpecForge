@@ -253,6 +253,14 @@ def main():
     print_on_rank0("Initialized target head")
 
     # Handle draft model config
+    # Save original draft_vocab_size from file before it gets modified by AutoDraftModelConfig
+    original_draft_vocab_size = None
+    if args.draft_model_config is not None and args.preserve_draft_vocab_size:
+        import json
+        with open(args.draft_model_config, "r") as f:
+            raw_config = json.load(f)
+        original_draft_vocab_size = raw_config.get("draft_vocab_size", None)
+
     if args.draft_model_config is None:
         # Auto-generate and save config file
         auto_config_path = create_draft_config_from_target(
@@ -262,9 +270,6 @@ def main():
     else:
         # Use provided config file
         draft_model_config = AutoDraftModelConfig.from_file(args.draft_model_config)
-
-    # Save original draft_vocab_size to restore later if preserve flag is set
-    original_draft_vocab_size = getattr(draft_model_config, "draft_vocab_size", None)
 
     if draft_model_last_checkpoint:
         draft_model = (
