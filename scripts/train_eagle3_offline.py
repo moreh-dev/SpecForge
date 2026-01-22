@@ -146,6 +146,9 @@ def parse_args():
         "--wandb-name", type=str, default=None, help="The run name for W&B."
     )
     parser.add_argument("--wandb-key", type=str, default=None, help="W&B API key.")
+    parser.add_argument(
+        "--wandb-id", type=str, default=None, help="W&B run ID for resuming."
+    )
     # add swanlab-specific args ---
     parser.add_argument(
         "--swanlab-project",

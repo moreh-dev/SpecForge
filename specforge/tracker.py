@@ -132,10 +132,18 @@ class WandbTracker(Tracker):
         super().__init__(args, output_dir)
         if self.rank == 0:
             wandb.login(key=args.wandb_key)
-            wandb.init(
-                project=args.wandb_project, name=args.wandb_name, config=vars(args)
-            )
+            init_kwargs = {
+                "project": args.wandb_project,
+                "name": args.wandb_name,
+                "config": vars(args)
+            }
+            if hasattr(args, 'wandb_id') and args.wandb_id:
+                init_kwargs["id"] = args.wandb_id
+                init_kwargs["resume"] = "allow"
+            wandb.init(**init_kwargs)
             self.is_initialized = True
+            # Store the run id for future resume
+            self.run_id = wandb.run.id if wandb.run else None
 
     def log(self, log_dict: Dict[str, Any], step: Optional[int] = None):
         if self.rank == 0 and self.is_initialized:
