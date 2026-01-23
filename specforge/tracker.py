@@ -137,6 +137,8 @@ class WandbTracker(Tracker):
                 "name": args.wandb_name,
                 "config": vars(args)
             }
+            if hasattr(args, 'wandb_group') and args.wandb_group:
+                init_kwargs["group"] = args.wandb_group
             if hasattr(args, 'wandb_id') and args.wandb_id:
                 init_kwargs["id"] = args.wandb_id
                 init_kwargs["resume"] = "allow"

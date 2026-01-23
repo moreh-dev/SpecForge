@@ -145,6 +145,9 @@ def parse_args():
     parser.add_argument(
         "--wandb-name", type=str, default=None, help="The run name for W&B."
     )
+    parser.add_argument(
+        "--wandb-group", type=str, default=None, help="The group name for W&B."
+    )
     parser.add_argument("--wandb-key", type=str, default=None, help="W&B API key.")
     parser.add_argument(
         "--wandb-id", type=str, default=None, help="W&B run ID for resuming."
